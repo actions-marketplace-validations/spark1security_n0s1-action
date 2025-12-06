@@ -50,7 +50,51 @@ inputs:
     required: false
     default: ''
   show-matched-secret-on-logs:
-    description: 'By default, only a sanitized version of the leak is shwon on logs. This flag makes the actual leaked secret to be displayed on logs. Be extra careful when enabling this flag because you might make the leak worst by sending sensitive info to logs'
+    description: 'By default, only a sanitized version of the leak is shown on logs. This flag makes the actual leaked secret to be displayed on logs. Be extra careful when enabling this flag because you might make the leak worst by sending sensitive info to logs'
+    required: false
+    default: ''
+  debug:
+    description: 'Debug mode. Warning it may further expose sensitive data'
+    required: false
+    default: ''
+  report-format   :
+    description: 'Output report format. Supported formats: n0s1, SARIF, gitlab'
+    required: false
+    default: ''
+  timeout:
+    description: 'HTTP request timeout in seconds'
+    required: false
+    default: ''
+  limit:
+    description: 'The limit of the number of pages to return per HTTP request'
+    required: false
+    default: ''
+  insecure:
+    description: 'Insecure mode. Ignore SSL certificate verification'
+    required: false
+    default: ''
+  map:
+    description: 'Enable mapping mode and define how many levels for the mapping'
+    required: false
+    default: ''
+  map-file:
+    description: 'Path to map file (e.g. n0s1_map.json). Use it for customizing the scope of the scan'
+    required: false
+    default: ''
+  scope:
+    description: 'Define a chunk of the map file to be scanned. Ex: 3/4 (will scan the third quarter of the map)'
+    required: false
+    default: ''
+  owner:
+    description: 'GitHub owner (e.g. user or organization)'
+    required: false
+    default: ''
+  repo:
+    description: 'GitHub repository to be scanned. If omitted all accessible repos under the owner will be scanned'
+    required: false
+    default: ''
+  branch:
+    description: 'GitHub/GitLab repository branch to be scanned. If omitted all branches are scanned'
     required: false
     default: ''
 
@@ -71,3 +115,14 @@ runs:
     - '-k ${{ inputs.contact-help }}'
     - '-l ${{ inputs.label }}'
     - '-m ${{ inputs.show-matched-secret-on-logs }}'
+    - '-n ${{ inputs.debug }}'
+    - '-o ${{ inputs.report-format }}'
+    - '-p ${{ inputs.timeout }}'
+    - '-q ${{ inputs.limit }}'
+    - '-r ${{ inputs.insecure }}'
+    - '-s ${{ inputs.map }}'
+    - '-t ${{ inputs.map-file }}'
+    - '-u ${{ inputs.scope }}'
+    - '-v ${{ inputs.owner }}'
+    - '-w ${{ inputs.repo }}'
+    - '-z ${{ inputs.branch }}'

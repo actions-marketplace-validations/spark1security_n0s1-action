@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-while getopts "a:b:c:d:e:f:g:h:i:j:k:l:m:n:o:p:q:r:s:t:u:v:z:" o; do
+while getopts "a:b:c:d:e:f:g:h:i:j:k:l:m:n:o:p:q:r:s:t:u:v:w:z:" o; do
    case "${o}" in
        a)
          export scanTarget=${OPTARG}
@@ -41,12 +41,45 @@ while getopts "a:b:c:d:e:f:g:h:i:j:k:l:m:n:o:p:q:r:s:t:u:v:z:" o; do
        m)
          export showMatchedSecretOnLogs=${OPTARG}
        ;;
+       n)
+         export debug=${OPTARG}
+       ;;
+       o)
+         export reportFormat=${OPTARG}
+       ;;
+       p)
+         export timeout=${OPTARG}
+       ;;
+       q)
+         export limit=${OPTARG}
+       ;;
+       r)
+         export insecure=${OPTARG}
+       ;;
+       s)
+         export map=${OPTARG}
+       ;;
+       t)
+         export mapFile=${OPTARG}
+       ;;
+       u)
+         export scope=${OPTARG}
+       ;;
+       v)
+         export owner=${OPTARG}
+       ;;
+       w)
+         export repo=${OPTARG}
+       ;;
+       z)
+         export branch=${OPTARG}
+       ;;
   esac
 done
 
 export scanTarget="${scanTarget}"
 export userEmail="${userEmail}"
-export passwordKey="${passwordKey}"
+export passwordKey=$(echo "${passwordKey}" | tr -d " ")
 export platformURL="${platformURL}"
 export postComment="${postComment}"
 export skipComment="${skipComment}"
@@ -57,6 +90,17 @@ export secretManager="${secretManager}"
 export contactHelp="${contactHelp}"
 export label="${label}"
 export showMatchedSecretOnLogs="${showMatchedSecretOnLogs}"
+export debug="${debug}"
+export reportFormat="${reportFormat}"
+export timeout="${timeout}"
+export limit="${limit}"
+export insecure="${insecure}"
+export map="${map}"
+export mapFile="${mapFile}"
+export scope="${scope}"
+export owner="${owner}"
+export repo="${repo}"
+export branch="${branch}"
 
 
 ARGS=""
@@ -99,6 +143,39 @@ if [ $label ];then
 fi
 if [ $showMatchedSecretOnLogs ];then
  ARGS="$ARGS --show-matched-secret-on-logs"
+fi
+if [ $debug ];then
+ ARGS="$ARGS --debug"
+fi
+if [ $reportFormat ];then
+ ARGS="$ARGS --report-format $reportFormat"
+fi
+if [ $timeout ];then
+ ARGS="$ARGS --timeout $timeout"
+fi
+if [ $limit ];then
+ ARGS="$ARGS --limit $limit"
+fi
+if [ $insecure ];then
+ ARGS="$ARGS --insecure"
+fi
+if [ $map ];then
+ ARGS="$ARGS --map $map"
+fi
+if [ $mapFile ];then
+ ARGS="$ARGS --map-file $mapFile"
+fi
+if [ $scope ];then
+ ARGS="$ARGS --scope $scope"
+fi
+if [ $owner ];then
+ ARGS="$ARGS --owner $owner"
+fi
+if [ $repo ];then
+ ARGS="$ARGS --repo $repo"
+fi
+if [ $branch ];then
+ ARGS="$ARGS --branch $branch"
 fi
 
 echo "Running n0s1 with options: n0s1 ${scanTarget} ${ARGS}" | sed "s/$passwordKey/<REDACTED>/g"
