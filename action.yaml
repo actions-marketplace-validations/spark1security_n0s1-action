@@ -9,9 +9,10 @@ inputs:
   user-email:
     description: 'User email for target platform login'
     required: false
+    default: ''
   password-key:
     description: 'User password or API key'
-    required: true
+    required: false
     default: ''
   platform-url:
     description: 'Your Jira instance URL'
@@ -38,7 +39,7 @@ inputs:
     required: false
     default: ''
   secret-manager:
-    description: 'Secret manager tool name to be suggested when leaks are found.'
+    description: 'Secret manager tool name to be suggested when leaks are found'
     required: false
     default: ''
   contact-help:
@@ -46,18 +47,26 @@ inputs:
     required: false
     default: ''
   label:
-    description: 'Unique identifier to be added to the comments so that the n0s1 bot can recognize if the leak has been previously flagged'
+    description: 'Unique identifier for n0s1 bot comments'
     required: false
     default: ''
   show-matched-secret-on-logs:
-    description: 'By default, only a sanitized version of the leak is shown on logs. This flag makes the actual leaked secret to be displayed on logs. Be extra careful when enabling this flag because you might make the leak worst by sending sensitive info to logs'
+    description: 'Write actual leaked secret to reports and logs'
+    required: false
+    default: ''
+  ai-analysis:
+    description: 'Send scan results to an AI agent to validate leaked credentials'
+    required: false
+    default: ''
+  private:
+    description: 'Private mode disables all interaction with the n0s1 backend service'
     required: false
     default: ''
   debug:
     description: 'Debug mode. Warning it may further expose sensitive data'
     required: false
     default: ''
-  report-format   :
+  report-format:
     description: 'Output report format. Supported formats: n0s1, SARIF, gitlab'
     required: false
     default: ''
@@ -78,11 +87,27 @@ inputs:
     required: false
     default: ''
   map-file:
-    description: 'Path to map file (e.g. n0s1_map.json). Use it for customizing the scope of the scan'
+    description: 'Path to map file (e.g. n0s1_map.json)'
     required: false
     default: ''
   scope:
-    description: 'Define a chunk of the map file to be scanned. Ex: 3/4 (will scan the third quarter of the map)'
+    description: 'Define a chunk of the map file to be scanned. Ex: 3/4'
+    required: false
+    default: ''
+  n0s1-api-key:
+    description: 'n0s1 API key for Professional mode. Visit n0s1.spark1.us to issue a new token.'
+    required: false
+    default: ''
+  report-uuid:
+    description: 'UUID to assign to the scan report. When set, overrides the auto-generated UUID written to the report JSON. Also used with scan-target: analyze to identify a previously uploaded report.'
+    required: false
+    default: ''
+  wait:
+    description: 'Minutes to poll the backend before giving up. Can be used alongside --ai-analysis for all scan targets, or with scan-target: analyze. Exit 0 on complete, 1 on error/timeout, 2 if still pending.'
+    required: false
+    default: ''
+  allow-secret-upload:
+    description: 'Allow encrypted secrets to be uploaded to the n0s1 backend during AI analysis (default: false)'
     required: false
     default: ''
   owner:
@@ -90,39 +115,13 @@ inputs:
     required: false
     default: ''
   repo:
-    description: 'GitHub repository to be scanned. If omitted all accessible repos under the owner will be scanned'
+    description: 'GitHub repository to be scanned'
     required: false
     default: ''
   branch:
-    description: 'GitHub/GitLab repository branch to be scanned. If omitted all branches are scanned'
+    description: 'GitHub/GitLab repository branch to be scanned'
     required: false
     default: ''
-
 runs:
   using: 'docker'
   image: "Dockerfile"
-  args:
-    - '-a ${{ inputs.scan-target }}'
-    - '-b ${{ inputs.user-email }}'
-    - '-c ${{ inputs.password-key }}'
-    - '-d ${{ inputs.platform-url }}'
-    - '-e ${{ inputs.post-comment }}'
-    - '-f ${{ inputs.skip-comment }}'
-    - '-g ${{ inputs.regex-file }}'
-    - '-h ${{ inputs.config-file }}'
-    - '-i ${{ inputs.report-file }}'
-    - '-j ${{ inputs.secret-manager }}'
-    - '-k ${{ inputs.contact-help }}'
-    - '-l ${{ inputs.label }}'
-    - '-m ${{ inputs.show-matched-secret-on-logs }}'
-    - '-n ${{ inputs.debug }}'
-    - '-o ${{ inputs.report-format }}'
-    - '-p ${{ inputs.timeout }}'
-    - '-q ${{ inputs.limit }}'
-    - '-r ${{ inputs.insecure }}'
-    - '-s ${{ inputs.map }}'
-    - '-t ${{ inputs.map-file }}'
-    - '-u ${{ inputs.scope }}'
-    - '-v ${{ inputs.owner }}'
-    - '-w ${{ inputs.repo }}'
-    - '-z ${{ inputs.branch }}'

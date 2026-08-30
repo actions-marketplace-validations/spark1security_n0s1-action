@@ -29,32 +29,37 @@ For scripting or programmatic use outside of GitHub Actions, use the CLI, Docker
 
 ## Inputs Reference
 
-| Input | Required | Default | Description |
-|---|---|---|---|
-| `scan-target` | yes | `jira_scan` | Platform to scan. See valid values below. |
-| `password-key` | yes | _(empty)_ | API key or token for the target platform. |
-| `user-email` | no | | User email (Jira, Confluence, Zendesk). |
-| `platform-url` | no | | Server URL or subdomain depending on platform. |
-| `post-comment` | no | | If set, posts a warning comment on tickets with leaks. |
-| `skip-comment` | no | | If set, skips scanning ticket/issue comments. |
-| `regex-file` | no | | Path to custom `.yaml` or `.toml` regex patterns file. |
-| `config-file` | no | | Path to custom YAML configuration file. |
-| `report-file` | no | | Output file path for the scan report. |
-| `report-format` | no | | `n0s1` \| `sarif` \| `SARIF` \| `gitlab` |
-| `secret-manager` | no | | Secret manager name to recommend in warning comments. |
-| `contact-help` | no | | Contact info to include in warning comments. |
-| `label` | no | | Unique tag so the bot can detect previously flagged leaks. |
-| `show-matched-secret-on-logs` | no | | If set, logs the actual leaked secret. Use with caution. |
-| `debug` | no | | If set, enables verbose debug logging. |
-| `timeout` | no | | HTTP request timeout in seconds. |
-| `limit` | no | | Max pages per HTTP request. |
-| `insecure` | no | | If set, skips SSL certificate verification. |
-| `map` | no | | Mapping depth levels. Generates a map file; does NOT scan. |
-| `map-file` | no | | Path to an existing map file to scope the scan. |
-| `scope` | no | | Platform query or map chunk (see Scope section). |
-| `owner` | no | | GitHub/GitLab org or group name. |
-| `repo` | no | | Repository name or GitLab project path. |
-| `branch` | no | | Branch name(s). Comma-separated list accepted. |
+| Input                         | Required | Default | Description                                                               |
+|-------------------------------|---|---|---------------------------------------------------------------------------|
+| `scan-target`                 | yes | `jira_scan` | Platform to scan. See valid values below.                                 |
+| `password-key`                | yes | _(empty)_ | API key or token for the target platform.                                 |
+| `user-email`                  | no | | User email (Jira, Confluence, Zendesk).                                   |
+| `platform-url`                | no | | Server URL or subdomain depending on platform.                            |
+| `post-comment`                | no | | If set, posts a warning comment on tickets with leaks.                    |
+| `skip-comment`                | no | | If set, skips scanning ticket/issue comments.                             |
+| `regex-file`                  | no | | Path to custom `.yaml` or `.toml` regex patterns file.                    |
+| `config-file`                 | no | | Path to custom YAML configuration file.                                   |
+| `report-file`                 | no | | Output file path for the scan report.                                     |
+| `report-format`               | no | | `n0s1` \| `sarif` \| `SARIF` \| `gitlab`                                  |
+| `secret-manager`              | no | | Secret manager name to recommend in warning comments.                     |
+| `contact-help`                | no | | Contact info to include in warning comments.                              |
+| `label`                       | no | | Unique tag so the bot can detect previously flagged leaks.                |
+| `show-matched-secret-on-logs` | no | | If set, logs the actual leaked secret. Use with caution.                  |
+| `ai-analysis`                 | no | | If set, sends scan results to an AI agent to validate leaked credentials. |
+| `private`                     | no | | If set, disables interaction with n0s1 backend.                           |
+| `debug`                       | no | | If set, enables verbose debug logging.                                    |
+| `timeout`                     | no | | HTTP request timeout in seconds.                                          |
+| `limit`                       | no | | Max pages per HTTP request.                                               |
+| `insecure`                    | no | | If set, skips SSL certificate verification.                               |
+| `map`                         | no | | Mapping depth levels. Generates a map file; does NOT scan.                |
+| `map-file`                    | no | | Path to an existing map file to scope the scan.                           |
+| `scope`                       | no | | Platform query or map chunk (see Scope section).                          |
+| `owner`                       | no | | GitHub/GitLab org or group name.                                          |
+| `repo`                        | no | | Repository name or GitLab project path.                                   |
+| `branch`                      | no | | Branch name(s). Comma-separated list accepted.                            |
+| `report-uuid`                 | no | | UUID to assign to the scan report; overrides the auto-generated one. Also used with `scan-target: analyze` to identify a previously uploaded report. |
+| `wait`                        | no | | Minutes to poll the backend before giving up. Can be used alongside `ai-analysis` for all scan targets, or with `scan-target: analyze`. Exit `0` = complete, `1` = error/timeout, `2` = still pending. |
+| `allow-secret-upload`         | no | | If set, allows encrypted secrets to be uploaded to the n0s1 backend during AI analysis. When omitted, credentials stay local and are injected client-side. |
 
 ### Valid `scan-target` values
 
@@ -70,6 +75,7 @@ For scripting or programmatic use outside of GitHub Actions, use the CLI, Docker
 | `wrike_scan` | Wrike |
 | `linear_scan` | Linear |
 | `zendesk_scan` | Zendesk |
+| `analyze` | AI analysis — submit or advance async credential validation |
 
 ---
 
@@ -93,6 +99,9 @@ The action wraps the n0s1 CLI. This table resolves naming differences:
 | `secret-manager` | `--secret-manager` | `secret_manager` |
 | `contact-help` | `--contact-help` | `contact_help` |
 | `map-file` | `--map-file` | `map_file` |
+| `report-uuid` | `--report-uuid` | `report_uuid` |
+| `wait` | `--wait` | `wait` (int, minutes) |
+| `allow-secret-upload` | `--allow-secret-upload` | `allow_secret_upload` |
 | All others | Same name with `--` prefix | Same name with `_` |
 
 ---
@@ -273,6 +282,105 @@ jobs:
           scan-target: linear_scan
           password-key: ${{ secrets.LINEAR_TOKEN }}
           debug: 'true'
+```
+
+### AI analysis — blocking (scan + wait in one job)
+
+Add `ai-analysis: 'true'` and `wait: '10'` to the scan step to run the scan and block until AI analysis completes in a single step. The `wait` value is the polling timeout in **minutes**.
+
+```yaml
+name: Jira Scan with AI Analysis
+on:
+  schedule:
+    - cron: '0 10 * * 1'
+
+jobs:
+  scan-and-analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Scan Jira (with blocking AI analysis)
+        uses: spark1security/n0s1-action@main
+        with:
+          scan-target: jira_scan
+          platform-url: https://mycompany.atlassian.net
+          user-email: service@mycompany.com
+          password-key: ${{ secrets.JIRA_TOKEN }}
+          n0s1-api-key: ${{ secrets.N0S1_TOKEN }}
+          ai-analysis: 'true'
+          wait: '10'    # block up to 10 minutes; exits 0 on complete, 1 on error/timeout
+          report-file: jira-scan.json
+```
+
+Alternatively, keep the scan and analysis as separate steps using `scan-target: analyze`:
+
+```yaml
+      - name: Scan Jira
+        id: scan
+        uses: spark1security/n0s1-action@main
+        with:
+          scan-target: jira_scan
+          platform-url: https://mycompany.atlassian.net
+          user-email: service@mycompany.com
+          password-key: ${{ secrets.JIRA_TOKEN }}
+          n0s1-api-key: ${{ secrets.N0S1_TOKEN }}
+          ai-analysis: 'true'
+          report-file: jira-scan.json
+
+      - name: Wait for AI analysis
+        uses: spark1security/n0s1-action@main
+        with:
+          scan-target: analyze
+          n0s1-api-key: ${{ secrets.N0S1_TOKEN }}
+          report-file: jira-scan.json
+          wait: '10'    # poll up to 10 minutes; exits 0 on complete, 1 on error/timeout
+```
+
+### AI analysis — retry loop (scan and analyze in separate jobs)
+
+Use exit code `2` (pending) to drive a workflow-level retry without blocking the scan job.
+
+```yaml
+name: Jira Scan with AI Analysis (retry loop)
+on:
+  schedule:
+    - cron: '0 10 * * 1'
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    outputs:
+      report-uuid: ${{ steps.scan.outputs.report-uuid }}
+    steps:
+      - name: Scan Jira
+        id: scan
+        uses: spark1security/n0s1-action@main
+        with:
+          scan-target: jira_scan
+          platform-url: https://mycompany.atlassian.net
+          user-email: service@mycompany.com
+          password-key: ${{ secrets.JIRA_TOKEN }}
+          n0s1-api-key: ${{ secrets.N0S1_TOKEN }}
+          ai-analysis: 'true'
+          report-file: jira-scan.json
+
+  analyze:
+    runs-on: ubuntu-latest
+    needs: scan
+    steps:
+      - name: Advance AI analysis
+        id: analyze
+        uses: spark1security/n0s1-action@main
+        with:
+          scan-target: analyze
+          n0s1-api-key: ${{ secrets.N0S1_TOKEN }}
+          report-file: jira-scan.json
+        continue-on-error: true   # exit 2 (pending) must not fail the job
+
+      - name: Check if still pending
+        if: steps.analyze.outcome == 'failure'
+        run: |
+          echo "Analysis still pending — re-run this job or increase the wait timeout."
+          exit 2
 ```
 
 ### Zendesk scan
